@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PAR Invoice">
+<meta name="theme-color" content="#1A3A5C">
+<title>PAR Invoice Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+<link rel="apple-touch-icon" href="icon.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{
+  --navy:#1A3A5C;--navy-mid:#2A5480;--navy-light:#4A7FA5;
+  --navy-muted:#8AAFC8;--navy-soft:#E8EDF2;--navy-pale:#F5F7FA;
+  --cream-b:#D0D8E0;--text-d:#1A3A5C;--text-m:#2A5480;--text-s:#6B8FA8;
+  --danger:#C4544A;--success:#4CAF82;--amber:#E8A838;--r:10px;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:#F0F4F8;color:var(--text-d);font-size:15px;-webkit-font-smoothing:antialiased}
+#app{display:flex;flex-direction:column;height:100%;height:100dvh}
+
+/* TOPBAR */
+.topbar{background:var(--navy);padding-top:var(--safe-top);flex-shrink:0;z-index:10}
+.topbar-inner{padding:14px 24px 14px}
+.topbar-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.topbar-title{font-family:'Inter',sans-serif;font-size:18px;color:#fff;font-weight:700;letter-spacing:-.01em}
+.topbar-sub{font-size:11px;color:var(--navy-muted);margin-top:2px;font-weight:500}
+
+/* TABS */
+.tabbar{display:flex;background:#fff;border-bottom:1px solid var(--cream-b);flex-shrink:0;padding-top:4px}
+.tab{flex:1;padding:9px 4px 7px;text-align:center;font-size:11px;font-weight:600;color:var(--text-s);cursor:pointer;border-bottom:2.5px solid transparent;transition:all .15s;user-select:none}
+.tab.active{color:var(--navy-mid);border-bottom-color:var(--navy-mid)}
+.tab-icon{font-size:17px;display:block;margin-bottom:2px}
+
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 0 24px;background:#F0F4F8}
+.screen{display:none}.screen.active{display:block}
+
+/* CARDS */
+.card{background:#fff;border-top:1px solid var(--cream-b);border-bottom:1px solid var(--cream-b);margin-bottom:10px}
+.card-head{background:var(--navy-soft);padding:9px 14px 9px 18px;font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--navy-mid);display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:38px}
+.card-body{padding:14px 18px}
+
+/* FIELDS */
+.field{margin-bottom:12px}.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-s);margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:11px 13px;border:1.5px solid var(--cream-b);border-radius:8px;font-family:'Inter',sans-serif;font-size:15px;color:var(--text-d);background:var(--navy-pale);outline:none;-webkit-appearance:none;appearance:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--navy-light);background:#fff}
+.field input[readonly]{background:#EDF0F4;color:var(--text-s)}
+.field textarea{resize:none;height:68px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* SESSION CARDS */
+.session-card{background:var(--navy-pale);border:1px solid var(--cream-b);border-radius:8px;padding:12px;margin:8px 12px}
+.session-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.session-num{background:var(--navy-muted);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.chip-11{background:#E8EDF2;color:var(--navy-mid);font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;margin-left:4px}
+.chip-mcis{background:#FFF8DC;color:#8B6914;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;margin-left:4px}
+.chip-group{background:#D4EFE8;color:#1B5E50;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;margin-left:4px}
+.chip-meeting{background:#FCE4D6;color:#8B3A2A;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;margin-left:4px}
+.chip-invoiced{background:#D4EFE8;color:#1B6B52;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;margin-left:4px}
+.session-remove{background:#FCE4D6;border:none;border-radius:6px;color:var(--danger);font-size:16px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sess-field label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-s);margin-bottom:4px}
+.sess-field input,.sess-field select{width:100%;padding:9px 11px;border:1.5px solid var(--cream-b);border-radius:7px;font-family:'Inter',sans-serif;font-size:14px;color:var(--text-d);background:#fff;outline:none;-webkit-appearance:none;appearance:none;margin-bottom:8px}
+.sess-field input:focus,.sess-field select:focus{border-color:var(--navy-light)}
+.sess-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* MONTH GROUPS */
+.month-group{margin-bottom:10px}
+.month-group-header{display:flex;align-items:center;justify-content:space-between;padding:11px 18px;cursor:pointer;user-select:none;border-radius:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.month-group-header.uninvoiced{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 100%);color:#fff}
+.month-group-header.invoiced{background:linear-gradient(135deg,#2E7D62 0%,#4CAF82 100%);color:#fff}
+.month-group-header.partial{background:linear-gradient(135deg,#8B6914 0%,#E8A838 100%);color:#fff}
+.month-group-title{font-size:14px;font-weight:700}
+.month-group-meta{font-size:11px;opacity:.8;margin-top:1px}
+.month-group-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.month-gen-btn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:6px;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;pointer-events:auto}
+.month-chevron{font-size:12px;transition:transform .2s;display:inline-block}
+.month-chevron.open{transform:rotate(180deg)}
+.month-sessions-body{border-top:none;border-left:none;border-right:none;overflow:hidden;background:#F0F4F8}
+.month-sessions-body.hidden{display:none}
+
+/* BUTTONS */
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;padding:13px;border-radius:10px;border:none;font-family:'Inter',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .15s;width:100%}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--navy);color:#fff}.btn-primary:active{background:var(--navy-mid)}
+.btn-secondary{background:var(--navy-soft);color:var(--navy-mid)}
+.btn-ghost{background:#fff;color:var(--text-m);border:1.5px solid var(--cream-b)}
+.btn-danger-ghost{background:#fff;color:var(--danger);border:1.5px solid #F4C9C7}
+.btn-sm{padding:9px 14px;font-size:13px;width:auto}
+
+/* STATS */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;padding:0 14px}
+.stat-card{background:#fff;border:1px solid var(--cream-b);border-radius:var(--r);padding:14px}
+.stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-s);margin-bottom:4px}
+.stat-value{font-size:22px;font-weight:600;color:var(--navy-mid)}
+
+/* LOG */
+.log-row{display:flex;align-items:center;padding:12px 18px;border-bottom:1px solid var(--cream-b);gap:10px}
+.log-row:last-child{border-bottom:none}
+.log-badge{background:var(--navy-soft);color:var(--navy-mid);font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0}
+.log-info{flex:1;min-width:0}
+.log-period{font-size:13px;font-weight:600;color:var(--text-d)}
+.log-meta{font-size:11px;color:var(--text-s);margin-top:1px}
+.log-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.log-amt{font-size:14px;font-weight:700;color:var(--navy-mid)}
+
+/* BOTTOM BAR */
+
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,58,92,.55);z-index:100;display:none;align-items:flex-end;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal-sheet{background:#fff;border-radius:18px 18px 0 0;padding:0 0 calc(var(--safe-bot)+20px);width:100%;max-height:92dvh;overflow-y:auto;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:var(--cream-b);border-radius:2px;margin:10px auto 0}
+.modal-head{padding:14px 18px 0;display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:17px;font-weight:700;color:var(--text-d)}
+.modal-close{background:var(--navy-soft);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;color:var(--navy-mid);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.modal-body{padding:16px 18px}
+
+/* BILLING RULES TABLE */
+.rules-table{width:100%;border-collapse:collapse;font-size:12px}
+.rules-table th{background:var(--navy);color:#fff;padding:7px 18px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.rules-table td{padding:8px 18px;border-bottom:1px solid var(--cream-b);vertical-align:middle}
+.rules-table tr:nth-child(even) td{background:var(--navy-soft)}
+.rules-table tr:last-child td{border-bottom:none}
+.rules-table td:last-child{text-align:right;font-weight:700;color:var(--navy-mid);white-space:nowrap}
+.rules-section-head{background:var(--navy-muted) !important;color:#fff !important;font-weight:700;font-size:10px;letter-spacing:.07em;text-transform:uppercase}
+
+/* INVOICE */
+.inv-gov{background:#fff;border:1px solid #bbb;border-radius:4px;padding:18px 16px;font-family:'Arial',sans-serif;font-size:10px;color:#000;max-width:680px;margin:0 auto}
+.gov-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.gov-header-left .g-label{font-size:8px;color:#333;margin-bottom:0}
+.gov-header-left .g-val{font-size:10px;font-weight:700;color:#000;margin-bottom:5px}
+.gov-invoice-title{font-size:28px;font-weight:900;color:#aaa;letter-spacing:.08em;text-align:right;line-height:1}
+.gov-invoice-num{font-size:10px;font-weight:700;color:#000;text-align:right;margin-top:3px}
+.gov-invoice-date{font-size:9px;color:#444;text-align:right;margin-top:2px}
+.gov-addr-line{font-size:8px;color:#444;margin-bottom:8px;border-bottom:1px solid #ddd;padding-bottom:6px}
+.gov-to-for{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:10px}
+.gov-to-for .block-label{font-size:9px;font-weight:700;color:#000;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}
+.gov-to-for .block-line{font-size:9px;color:#000;margin-bottom:1px;line-height:1.5}
+table.gov-tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9px;border:1px solid #000;margin-bottom:0}
+.gov-tbl th{background:#2F2F2F;color:#fff;font-size:8px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:5px 4px;text-align:center;vertical-align:middle}
+.gov-tbl .sub-head th{background:#FFFF00;color:#000;font-size:7px;font-weight:700;padding:4px 3px;text-align:center;line-height:1.2;vertical-align:middle}
+.gov-tbl tbody tr:nth-child(even){background:#F5F5F5}
+.gov-tbl td{padding:4px 4px;vertical-align:middle;border-bottom:1px solid #ddd;font-size:9px;line-height:1.3}
+.gov-tbl td.r{text-align:right;white-space:nowrap}.gov-tbl td.c{text-align:center;white-space:nowrap}
+.gov-col-date{width:15%}.gov-col-desc{width:40%}.gov-col-hrs{width:11%}.gov-col-rate{width:16%}.gov-col-amt{width:18%}
+.gov-totals-wrap{display:flex;justify-content:flex-end;border:1px solid #000;border-top:none}
+.gov-totals-inner{width:55%;border-left:1px solid #000}
+.gov-total-line{display:flex;justify-content:space-between;align-items:center;padding:3px 8px;border-bottom:1px solid #ddd;font-size:9px}
+.gov-total-line:last-child{border-bottom:none;font-weight:700}
+.gov-total-val{background:#FFFF00;padding:1px 8px;font-weight:700;min-width:60px;text-align:right;display:inline-block}
+.gov-sig-section{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.gov-sig-block .sig-name{font-size:11px;font-weight:700;text-align:center;margin-bottom:2px}
+.gov-sig-block .sig-line{border-top:1.5px solid #000;margin-bottom:3px}
+.gov-sig-block .sig-label{font-size:8px;color:#555}
+.gov-auth-block .sig-line{border-top:1.5px solid #000;margin-bottom:3px;margin-top:18px}
+.gov-auth-block .sig-label{font-size:8px;color:#555}
+.gov-auth-block .auth-line{font-size:8px;color:#000}
+
+/* TOAST */
+#toast{position:fixed;bottom:calc(var(--safe-bot)+80px);left:50%;transform:translateX(-50%) translateY(8px);background:var(--navy);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:all .25s;white-space:nowrap;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.success{background:#2E7D62}#toast.error{background:#A83D35}
+.confirm-overlay{position:fixed;inset:0;background:rgba(26,58,92,.6);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.confirm-overlay.open{display:flex}
+.confirm-box{background:#fff;border-radius:14px;padding:24px 20px;width:100%;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.confirm-msg{font-size:15px;font-weight:500;color:var(--text-d);margin-bottom:20px;line-height:1.5}
+.confirm-btns{display:flex;gap:10px}
+.confirm-btns button{flex:1;padding:13px;border-radius:10px;font-family:'Inter',sans-serif;font-size:15px;font-weight:600;cursor:pointer;border:none}
+.confirm-ok{background:var(--danger);color:#fff}
+.confirm-ok.safe{background:var(--navy);color:#fff}
+.confirm-cancel{background:var(--navy-soft);color:var(--navy-mid)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-row">
+        <div>
+          <div class="topbar-title">PAR Invoice Tool</div>
+          <div class="topbar-sub" id="topbar-sub">Set up your profile in Settings</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab active" onclick="showTab('sessions',this)"><span class="tab-icon">📋</span>Sessions</div>
+    <div class="tab" onclick="showTab('invoice',this)"><span class="tab-icon">📄</span>Invoice</div>
+    <div class="tab" onclick="showTab('reports',this)"><span class="tab-icon">📊</span>Reports</div>
+    <div class="tab" onclick="showTab('settings',this)"><span class="tab-icon">⚙️</span>Settings</div>
+  </div>
+
+  <div class="scroll" id="scroll-area">
+
+    <!-- SESSIONS -->
+    <div class="screen active" id="screen-sessions">
+      <div class="card">
+        <div class="card-head">
+          Quick Add
+          <button class="btn btn-sm btn-secondary" onclick="openBulkAdd()" style="padding:5px 10px;font-size:11px;width:auto">Bulk ＋</button>
+        </div>
+        <div class="card-body" id="quick-add-body"></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          Sessions <span id="session-count-badge" style="background:var(--navy-muted);color:#fff;padding:2px 8px;border-radius:20px;font-size:10px;">0</span>
+        </div>
+        <div id="sessions-list" style="padding:12px 0 4px"><div style="text-align:center;padding:20px;color:var(--text-s);font-size:13px;">No sessions yet.</div></div>
+        <div style="display:flex;gap:10px;padding:12px 18px;border-top:1px solid #E2D9F3">
+          <button id="btn-remove-dup" style="flex:1;padding:13px;background:#fff;color:#6B8FA8;border:1.5px solid #D0D8E0;border-radius:10px;font-family:Inter,sans-serif;font-size:14px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none;touch-action:manipulation">Remove Duplicates</button>
+          <button id="btn-clear-sess" style="flex:1;padding:13px;background:#fff;color:#C4544A;border:1.5px solid #F4C9C7;border-radius:10px;font-family:Inter,sans-serif;font-size:14px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none;touch-action:manipulation">Clear Sessions</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;padding:14px 18px calc(var(--safe-bot)+16px)">
+        <button class="btn btn-ghost" onclick="openPreview()" style="flex:1">Preview</button>
+        <button class="btn btn-primary" id="btn-generate" onclick="openPreview()" style="flex:2">⬇ Download PDF</button>
+      </div>
+    </div>
+
+    <!-- INVOICE -->
+    <div class="screen" id="screen-invoice">
+      <div class="card">
+        <div class="card-head">Invoice Details</div>
+        <div class="card-body">
+          <div class="field-row">
+            <div class="field"><label>Invoice #</label><input type="text" id="inv-num" value="001" oninput="saveState()"></div>
+            <div class="field"><label>Date</label><input type="date" id="inv-date" oninput="saveState()"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">Summary</div>
+        <div class="card-body">
+          <div class="stat-grid" style="padding:0">
+            <div class="stat-card"><div class="stat-label">Sessions</div><div class="stat-value" id="sum-sessions">0</div></div>
+            <div class="stat-card"><div class="stat-label">Total Hours</div><div class="stat-value" id="sum-hours">0</div></div>
+            <div class="stat-card"><div class="stat-label">Period</div><div class="stat-value" style="font-size:12px;margin-top:3px" id="sum-period">—</div></div>
+            <div class="stat-card"><div class="stat-label">Total Due</div><div class="stat-value" id="sum-total">$0</div></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-ghost" onclick="openPreview()" style="margin:0 14px 8px">👁 Preview Invoice</button>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="screen" id="screen-reports">
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-label">YTD Earned</div><div class="stat-value" id="rep-ytd">$0</div></div>
+        <div class="stat-card"><div class="stat-label">Invoices</div><div class="stat-value" id="rep-count">0</div></div>
+        <div class="stat-card"><div class="stat-label">This Month</div><div class="stat-value" id="rep-month">$0</div></div>
+        <div class="stat-card"><div class="stat-label">Sessions</div><div class="stat-value" id="rep-sessions">0</div></div>
+      </div>
+      <div class="card">
+        <div class="card-head">Invoice History</div>
+        <div id="invoice-log"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="screen" id="screen-settings">
+
+      <!-- PROFILE -->
+      <div class="card">
+        <div class="card-head">Your Profile</div>
+        <div class="card-body">
+          <div class="field"><label>Full Name</label><input type="text" id="s-name" placeholder="Your Full Name" oninput="saveSettings()"></div>
+          <div class="field"><label>Street Address</label><input type="text" id="s-addr" placeholder="123 Main Street" oninput="saveSettings()"></div>
+          <div class="field"><label>City, Province, Postal</label><input type="text" id="s-city" placeholder="City, Province A1A 1A1" oninput="saveSettings()"></div>
+          <div class="field"><label>Phone</label><input type="text" id="s-phone" placeholder="416-555-0100" oninput="saveSettings()"></div>
+          <div class="field"><label>Email</label><input type="email" id="s-email" placeholder="your@email.com" oninput="saveSettings()"></div>
+          <div class="field"><label>Default Rate ($/hr)</label><input type="number" id="s-rate" value="40" step="5" oninput="saveSettings()"></div>
+        </div>
+      </div>
+
+      <!-- CONTRACT -->
+      <div class="card">
+        <div class="card-head">Contract Details</div>
+        <div class="card-body">
+          <div class="field"><label>Contract #</label><input type="text" id="s-contract" placeholder="0000000000" oninput="saveSettings()"></div>
+          <div class="field"><label>HST #</label><input type="text" id="s-hst" value="N/A" oninput="saveSettings()"></div>
+        </div>
+      </div>
+
+      <!-- PAYEE -->
+      <div class="card">
+        <div class="card-head">Payee (Invoice Recipient)</div>
+        <div class="card-body">
+          <div class="field"><label>Payee Name</label><input type="text" id="s-payee" placeholder="Region of Durham" oninput="saveSettings()"></div>
+          <div class="field"><label>Address Line 1</label><input type="text" id="s-payee-addr1" placeholder="605 Rossland Road East" oninput="saveSettings()"></div>
+          <div class="field"><label>City / Postal</label><input type="text" id="s-payee-addr2" placeholder="Whitby, Ontario  L1N 6A3" oninput="saveSettings()"></div>
+          <div class="field"><label>For Line 1</label><input type="text" id="s-for1" placeholder="Durham Region Family Services" oninput="saveSettings()"></div>
+          <div class="field"><label>For Line 2</label><input type="text" id="s-for2" placeholder="PAR Group Facilitation" oninput="saveSettings()"></div>
+        </div>
+      </div>
+
+      <!-- SUPERVISOR -->
+      <div class="card">
+        <div class="card-head">Supervisor</div>
+        <div class="card-body">
+          <div class="field"><label>Supervisor Name & Title</label><input type="text" id="s-supervisor" placeholder="Dawn Hopps, Supervisor" oninput="saveSettings()"></div>
+          <div class="field"><label>Program</label><input type="text" id="s-sup-title" placeholder="Partner Assault Response Program" oninput="saveSettings()"></div>
+        </div>
+      </div>
+
+      <!-- PAR CONFIG -->
+
+      <div class="card">
+        <div class="card-head">Your Signature</div>
+        <div class="card-body">
+          <div id="sig-preview" style="border:1.5px dashed var(--border,#d8d2c4);border-radius:10px;min-height:84px;display:flex;align-items:center;justify-content:center;background:#fff;margin-bottom:12px;padding:8px;font-size:13px;color:#888"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <button class="btn btn-primary" id="sig-draw-btn" type="button">Draw signature</button>
+            <button class="btn btn-secondary" id="sig-upload-btn" type="button">Upload image</button>
+          </div>
+          <button class="btn btn-danger-ghost" id="sig-remove-btn" type="button" style="margin-top:10px;display:none">Remove signature</button>
+          <input type="file" id="sig-file" accept="image/*" style="display:none">
+          <div style="font-size:12px;color:#888;margin-top:10px;line-height:1.4">Appears above the Facilitator Signature line on government invoices. Without one, your name is shown in a signature style font.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">PAR Configuration</div>
+        <div class="card-body">
+          <div class="field">
+            <label>PAR 1:1 Default Sessions</label>
+            <input type="number" id="s-par-base" value="6" min="1" max="52" oninput="saveSettings()">
+          </div>
+          <p style="font-size:11px;color:var(--text-s);margin-top:-4px">Auto-fills occurrence count when bulk adding 1:1 sessions.</p>
+        </div>
+      </div>
+
+      <!-- BILLING RULES -->
+      <div class="card">
+        <div class="card-head">Billing Rules <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-s)">tap row to edit hours</span></div>
+        <div style="overflow:hidden">
+          <table class="rules-table" id="billing-rules-table"></table>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;margin:0 14px 12px">
+        <button class="btn btn-danger-ghost" onclick="clearInvoiceLog()">Clear Invoice Log</button>
+        <button class="btn btn-danger-ghost" onclick="clearAll()">Clear Everything</button>
+      </div>
+    </div>
+
+  </div><!-- /scroll -->
+
+
+</div>
+
+<!-- PREVIEW MODAL -->
+<div class="modal-overlay" id="modal-preview">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-title" id="preview-title">Invoice Preview</div>
+      <button class="modal-close" onclick="closeModal('modal-preview')">✕</button>
+    </div>
+    <div id="preview-nav" style="display:none;align-items:center;justify-content:space-between;padding:8px 18px 0;gap:10px">
+      <button onclick="previewNav(-1)" style="background:var(--navy-soft);border:none;border-radius:8px;width:36px;height:36px;font-size:18px;cursor:pointer;color:var(--navy-mid);display:flex;align-items:center;justify-content:center">‹</button>
+      <div style="text-align:center;flex:1">
+        <div id="preview-month-label" style="font-size:13px;font-weight:600;color:var(--text-d)"></div>
+        <div id="preview-month-counter" style="font-size:11px;color:var(--text-s);margin-top:1px"></div>
+      </div>
+      <button onclick="previewNav(1)" style="background:var(--navy-soft);border:none;border-radius:8px;width:36px;height:36px;font-size:18px;cursor:pointer;color:var(--navy-mid);display:flex;align-items:center;justify-content:center">›</button>
+    </div>
+    <div class="modal-body">
+      <div id="inv-preview-doc"></div>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-primary" onclick="downloadCurrentPreview()">⬇ Download This Invoice</button>
+        <button class="btn btn-ghost" onclick="closeModal('modal-preview')">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BULK ADD MODAL -->
+<div class="modal-overlay" id="modal-bulk">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head"><div class="modal-title">Bulk Add Sessions</div><button class="modal-close" onclick="closeModal('modal-bulk')">✕</button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:10px;margin-bottom:18px">
+        <button id="bulk-mode-range" onclick="setBulkMode('range')" style="flex:1;padding:12px 8px;border:2px solid var(--navy);border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:var(--navy);color:#fff;transition:all .15s">Date Range</button>
+        <button id="bulk-mode-count" onclick="setBulkMode('count')" style="flex:1;padding:12px 8px;border:2px solid var(--cream-b);border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:var(--text-s);transition:all .15s"># Occurrences</button>
+      </div>
+      <div class="field"><label>Start Date</label><input type="date" id="bulk-start" onchange="onBulkStartChange()"></div>
+      <div id="bulk-range-fields"><div class="field"><label>End Date</label><input type="date" id="bulk-end" onchange="previewBulk()"></div></div>
+      <div id="bulk-count-fields" style="display:none">
+        <div class="field"><label>Number of Occurrences</label><input type="number" id="bulk-count" value="6" min="1" max="52" onchange="previewBulk()" style="width:100%;padding:11px 13px;border:1.5px solid var(--cream-b);border-radius:8px;font-family:'Inter',sans-serif;font-size:15px;color:var(--text-d);background:var(--navy-pale);outline:none"></div>
+        <div id="bulk-count-end-label" style="font-size:11px;color:var(--text-s);margin-top:-8px;margin-bottom:12px;padding-left:2px"></div>
+      </div>
+      <div class="field-row" style="margin-top:16px">
+        <div class="field"><label>Day of Week</label>
+          <select id="bulk-day" onchange="previewBulk()">
+            <option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option>
+            <option value="3">Wednesday</option><option value="4">Thursday</option>
+            <option value="5">Friday</option><option value="6">Saturday</option>
+          </select>
+        </div>
+        <div class="field"><label>Frequency</label>
+          <select id="bulk-freq" onchange="previewBulk()">
+            <option value="1">Weekly</option><option value="2">Biweekly</option><option value="4">Every 4 wks</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>PAR Category</label>
+        <select id="bulk-par-cat" onchange="onBulkParCatChange()">
+          <option value="group">PAR Group (3h)</option>
+          <option value="11">PAR 1:1 Regular</option>
+          <option value="mcis">PAR 1:1 MCIS</option>
+          <option value="meeting">PAR Team Meeting (3h)</option>
+        </select>
+      </div>
+      <div class="field" id="bulk-initials-wrap" style="display:none">
+        <label>Client Initials <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-s)">(optional)</span></label>
+        <input type="text" id="bulk-initials" placeholder="e.g. TDH" maxlength="6" style="text-transform:uppercase;letter-spacing:.1em">
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Rate ($/hr)</label><input type="number" id="bulk-rate" value="40" step="5"></div>
+        <div class="field"><label>Billed Hours</label><input type="number" id="bulk-hrs" step="0.5" readonly style="background:#EDF0F4;color:var(--text-s)"></div>
+      </div>
+      <div id="bulk-preview" style="background:var(--navy-soft);border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--text-m);display:none;line-height:1.7"></div>
+      <button class="btn btn-primary" onclick="confirmBulkAdd()">Add Sessions</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT BILLING RULE MODAL -->
+<div class="modal-overlay" id="modal-edit-rule">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head"><div class="modal-title">Edit Billing Rule</div><button class="modal-close" onclick="closeModal('modal-edit-rule')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Scenario Name</label><input type="text" id="edit-rule-name"></div>
+      <div class="field"><label>Billed Hours</label><input type="number" id="edit-rule-hours" step="0.5" min="0" max="10"></div>
+      <p style="font-size:12px;color:var(--text-s);margin-bottom:14px">Changes apply to new sessions only.</p>
+      <button class="btn btn-primary" onclick="saveRuleEdit()">Save Rule</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD RULE MODAL -->
+/div>
+</div>
+
+<div class="modal-overlay" id="modal-add-rule">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head"><div class="modal-title">Add Billing Scenario</div><button class="modal-close" onclick="closeModal('modal-add-rule')">✕</button></div>
+    <div class="modal-body">
+      <div id="add-rule-cat-label" style="font-size:12px;font-weight:600;color:var(--navy-mid);margin-bottom:14px;text-transform:uppercase;letter-spacing:.07em"></div>
+      <div class="field"><label>Scenario Name</label><input type="text" id="new-rule-name" placeholder="e.g. Client left early"></div>
+      <div class="field"><label>Billed Hours</label><input type="number" id="new-rule-hours" value="1" step="0.5" min="0" max="10"></div>
+      <button class="btn btn-primary" onclick="confirmAddRule()">Add Scenario</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-overlay" id="modal-signature">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head"><div class="modal-title">Draw Your Signature</div><button class="modal-close" type="button" onclick="closeModal('modal-signature')">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:#888;margin-bottom:8px">Sign with your finger in the box below. Turn your phone sideways for more room.</div>
+      <canvas id="sig-canvas" width="900" height="300" style="width:100%;height:auto;aspect-ratio:3/1;background:#fff;border:1.5px solid #cfc8b6;border-radius:10px;touch-action:none;display:block"></canvas>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+        <button class="btn btn-secondary" type="button" id="sig-clear-btn">Clear</button>
+        <button class="btn btn-primary" type="button" id="sig-save-btn">Save signature</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- CONFIRM MODAL -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-msg" id="confirm-msg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" onclick="confirmResolve(false)">Cancel</button>
+      <button class="confirm-ok" id="confirm-ok-btn" onclick="confirmResolve(true)">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────
+const DEFAULT_RULES = [
+  {id:'r_11_attends',   cat:'11',      label:'Client attends 1hr session',                  hours:1.5},
+  {id:'r_11_noshow',    cat:'11',      label:'No Show — Client',                            hours:1.0},
+  {id:'r_11_faccancel', cat:'11',      label:'No Show — Facilitator',                       hours:0.0},
+  {id:'r_11_cancel24',  cat:'11',      label:'Cancelled — Less than 24h',                   hours:1.0},
+  {id:'r_11_cancel24p', cat:'11',      label:'Cancelled — More than 24h',                   hours:0.0},
+  {id:'r_11_early1',    cat:'11',      label:'Client left early — First 30min',              hours:1.0},
+  {id:'r_11_early2',    cat:'11',      label:'Client left early — Last 30min',               hours:1.5},
+  {id:'r_11_noncmply',  cat:'11',      label:'Client non-compliant, facilitator ends call',  hours:1.5},
+  {id:'r_mcis_attends', cat:'mcis',    label:'MCIS — Client attends 1.5hr session',          hours:2.0},
+  {id:'r_mcis_noshow',  cat:'mcis',    label:'MCIS — No Show / Cancelled <24h',              hours:1.5},
+  {id:'r_mcis_cancel',  cat:'mcis',    label:'MCIS — Cancelled more than 24h',               hours:0.0},
+  {id:'r_mcis_faccancel',cat:'mcis',   label:'MCIS — Facilitator cancellation',              hours:0.0},
+  {id:'r_grp_happens',  cat:'group',   label:'PAR Group — Happened',                        hours:3.0},
+  {id:'r_grp_noshow',   cat:'group',   label:'PAR Group — No Show / Cancelled',             hours:1.0},
+  {id:'r_mtg_happens',  cat:'meeting', label:'PAR Team Meeting — Attended',                 hours:3.0},
+  {id:'r_mtg_cancel',   cat:'meeting', label:'PAR Team Meeting — Cancelled',                hours:0.0},
+];
+
+const PAR_SESSION_TYPES=[
+  {value:'1:1 Virtual Session',   cat:'11'},
+  {value:'1:1 In-Person Session', cat:'11'},
+  {value:'1:1 MCIS Virtual',      cat:'mcis'},
+  {value:'1:1 MCIS In-Person',    cat:'mcis'},
+  {value:'PAR Group',             cat:'group'},
+  {value:'PAR Team Meeting',      cat:'meeting'},
+];
+const PAR_STATUSES=[
+  {value:'Happened',                          cat:'11',      ruleId:'r_11_attends'},
+  {value:'No Show — Client',                  cat:'11',      ruleId:'r_11_noshow'},
+  {value:'No Show — Facilitator',             cat:'11',      ruleId:'r_11_faccancel'},
+  {value:'Cancelled — Less than 24h',         cat:'11',      ruleId:'r_11_cancel24'},
+  {value:'Cancelled — More than 24h',         cat:'11',      ruleId:'r_11_cancel24p'},
+  {value:'Client left early — First 30min',   cat:'11',      ruleId:'r_11_early1'},
+  {value:'Client left early — Last 30min',    cat:'11',      ruleId:'r_11_early2'},
+  {value:'Client non-compliant',              cat:'11',      ruleId:'r_11_noncmply'},
+  {value:'Happened',                          cat:'mcis',    ruleId:'r_mcis_attends'},
+  {value:'No Show / Cancelled <24h',          cat:'mcis',    ruleId:'r_mcis_noshow'},
+  {value:'Cancelled — More than 24h',         cat:'mcis',    ruleId:'r_mcis_cancel'},
+  {value:'Facilitator Cancellation',          cat:'mcis',    ruleId:'r_mcis_faccancel'},
+  {value:'Happened',                          cat:'group',   ruleId:'r_grp_happens'},
+  {value:'No Show / Cancelled',               cat:'group',   ruleId:'r_grp_noshow'},
+  {value:'Happened',                          cat:'meeting', ruleId:'r_mtg_happens'},
+  {value:'Cancelled',                         cat:'meeting', ruleId:'r_mtg_cancel'},
+];
+
+let state={sessions:[],invoiceLog:[],rules:[],settings:{name:'',addr:'',city:'',phone:'',email:'',rate:40,contract:'',hst:'N/A',payee:'Region of Durham',payeeAddr1:'605 Rossland Road East',payeeAddr2:'Whitby, Ontario  L1N 6A3',for1:'Durham Region Family Services',for2:'PAR Group Facilitation',supervisor:'Dawn Hopps, Supervisor',supTitle:'Partner Assault Response Program',parBase:6}};
+let editingRuleId=null;
+let previewMonths=[],previewIndex=0;
+let bulkMode='range';
+const expandedMonths=new Set();
+
+// ── INIT ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  loadState();
+  if(!state.rules||!state.rules.length) state.rules=JSON.parse(JSON.stringify(DEFAULT_RULES));
+  applySettings();
+  renderQuickAdd();
+  renderSessions();
+  updateSummary();
+  renderReports();
+  renderInvoiceLog();
+  renderBillingRules();
+  updateTopbarSub();
+  document.getElementById('inv-date').value=todayStr();
+  autoInvoiceNum();
+  ['bulk-start','bulk-end','bulk-day','bulk-freq'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('change',previewBulk);
+  });
+  // Wire buttons via addEventListener for reliable iOS support
+  document.getElementById('btn-remove-dup').addEventListener('click', clearDuplicates);
+  document.getElementById('btn-clear-sess').addEventListener('click', clearSessions);
+});
+
+// ── HELPERS ───────────────────────────────────────────────
+function todayStr(){return new Date().toISOString().split('T')[0];}
+function fmtDate(str){if(!str)return'—';const d=new Date(str+'T12:00:00');return d.toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});}
+function calcPeriod(sessions){
+  const dates=(sessions||[]).filter(s=>s.date).map(s=>s.date).sort();
+  if(!dates.length)return{label:'—',range:''};
+  const fd=new Date(dates[0]+'T12:00:00'),ld=new Date(dates[dates.length-1]+'T12:00:00');
+  const same=fd.getMonth()===ld.getMonth()&&fd.getFullYear()===ld.getFullYear();
+  const label=same?fd.toLocaleDateString('en-CA',{month:'long',year:'numeric'}):fd.toLocaleDateString('en-CA',{month:'short',year:'numeric'})+' – '+ld.toLocaleDateString('en-CA',{month:'short',year:'numeric'});
+  return{label,range:fmtDate(dates[0])+' – '+fmtDate(dates[dates.length-1])};
+}
+function showToast(msg,type='',dur=2800){const t=document.getElementById('toast');t.textContent=msg;t.className='show'+(type?' '+type:'');setTimeout(()=>t.className='',dur);}
+function v(id){return(document.getElementById(id)||{}).value||'';}
+function getRuleHours(ruleId){return state.rules.find(r=>r.id===ruleId)?.hours??1;}
+function statusesForCat(cat){return PAR_STATUSES.filter(s=>s.cat===cat);}
+function getCatForType(typeVal){return PAR_SESSION_TYPES.find(t=>t.value===typeVal)?.cat||'11';}
+function catLabel(cat){return{group:'PAR Group','11':'1:1 Regular',mcis:'1:1 MCIS',meeting:'PAR Meeting'}[cat]||cat;}
+function catChipClass(cat){return{group:'chip-group','11':'chip-11',mcis:'chip-mcis',meeting:'chip-meeting'}[cat]||'chip-11';}
+function sortSessions(){state.sessions.sort((a,b)=>a.date.localeCompare(b.date));}
+
+// ── TABS / MODALS ─────────────────────────────────────────
+function showTab(id,el){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('scroll-area').scrollTop=0;
+  if(id==='reports')renderReports();
+}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+
+// ── QUICK ADD ─────────────────────────────────────────────
+function renderQuickAdd(){
+  const rate=state.settings.rate||40;
+  const typeOpts=PAR_SESSION_TYPES.map(t=>`<option value="${t.value}">${t.value}</option>`).join('');
+  document.getElementById('quick-add-body').innerHTML=`
+    <div class="field-row">
+      <div class="field"><label>Date</label><input type="date" id="qa-date"></div>
+      <div class="field"><label>Session Type</label><select id="qa-type" onchange="onQATypeChange()">${typeOpts}</select></div>
+    </div>
+    <div class="field"><label>Status</label><select id="qa-status" onchange="onQAStatusChange()"></select></div>
+    <div class="field"><label>Client Initials <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-s)">(optional)</span></label>
+      <input type="text" id="qa-initials" placeholder="e.g. TDH" maxlength="6" style="text-transform:uppercase;letter-spacing:.1em">
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Rate ($/hr)</label><input type="number" id="qa-rate" value="${rate}" step="5"></div>
+      <div class="field"><label>Billed Hours</label><input type="number" id="qa-hrs" step="0.5" min="0"></div>
+    </div>
+    <button class="btn btn-primary" onclick="quickAdd()">Add Session</button>`;
+  document.getElementById('qa-date').value=todayStr();
+  onQATypeChange();
+}
+function onQATypeChange(){
+  const cat=getCatForType(v('qa-type'));
+  const sel=document.getElementById('qa-status');
+  if(sel)sel.innerHTML=statusesForCat(cat).map(s=>`<option value="${s.ruleId}">${s.value}</option>`).join('');
+  onQAStatusChange();
+}
+function onQAStatusChange(){
+  const sel=document.getElementById('qa-status');
+  if(sel){const el=document.getElementById('qa-hrs');if(el)el.value=getRuleHours(sel.value);}
+}
+function quickAdd(){
+  const date=v('qa-date');
+  if(!date){showToast('Pick a date.','error');return;}
+  const typeVal=v('qa-type');
+  const cat=getCatForType(typeVal);
+  const needs11=cat==='11'||cat==='mcis';
+  const initials=v('qa-initials').trim().toUpperCase();
+  // Require initials for 1:1 and MCIS
+  if(needs11&&!initials){showToast('Enter client initials for 1:1 sessions.','error');return;}
+  const statusRuleId=v('qa-status');
+  const statusLabel=statusesForCat(cat).find(s=>s.ruleId===statusRuleId)?.value||'Happened';
+  const desc=initials?typeVal+' ('+initials+')':typeVal;
+  const rate=parseFloat(v('qa-rate'))||state.settings.rate||40;
+  const hrs=parseFloat(v('qa-hrs'))||0;
+  // Check for duplicate (same date + same description)
+  const dupKey=date+'|'+desc;
+  const isDup=state.sessions.some(s=>(s.date+'|'+s.service)===dupKey);
+  if(isDup){
+    appConfirm('A session for '+desc+' on '+date+' already exists. Add anyway?','Add Anyway','safe',function(ok){
+      if(!ok)return;
+      state.sessions.push({id:Date.now()+Math.random(),date,service:desc,cat,statusRuleId,status:statusLabel,rate,hrs,invoiced:false});
+      sortSessions();saveState();renderSessions();updateSummary();renderQuickAdd();
+      showToast('Session added ✓','success');
+    });
+    return;
+  }
+  state.sessions.push({id:Date.now()+Math.random(),date,service:desc,cat,statusRuleId,status:statusLabel,rate,hrs,invoiced:false});
+  sortSessions();
+  saveState();renderSessions();updateSummary();renderQuickAdd();
+  showToast('Session added ✓','success');
+}
+
+// ── SESSIONS RENDER ───────────────────────────────────────
+function renderSessions(){
+  const sessions=state.sessions;
+  const list=document.getElementById('sessions-list');
+  document.getElementById('session-count-badge').textContent=sessions.length;
+  if(!sessions.length){list.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-s);font-size:13px;">No sessions yet.</div>';return;}
+  const groups={};
+  sessions.forEach((s,i)=>{const ym=s.date?s.date.substring(0,7):'0000-00';if(!groups[ym])groups[ym]=[];groups[ym].push({...s,_idx:i});});
+  const sortedMonths=Object.keys(groups).sort();
+  list.innerHTML=sortedMonths.map(ym=>{
+    const group=groups[ym];
+    const allInv=group.every(s=>s.invoiced),anyInv=group.some(s=>s.invoiced);
+    const uninv=group.filter(s=>!s.invoiced);
+    const total=group.reduce((a,s)=>a+(s.hrs||0)*(s.rate||0),0);
+    const uninvTotal=uninv.reduce((a,s)=>a+(s.hrs||0)*(s.rate||0),0);
+    const[y,m]=ym.split('-');
+    const monthLabel=new Date(parseInt(y),parseInt(m)-1,1).toLocaleDateString('en-CA',{month:'long',year:'numeric'});
+    const isOpen=expandedMonths.has(ym);
+    const headerClass=allInv?'invoiced':anyInv?'partial':'uninvoiced';
+    const invNums=[...new Set(group.filter(s=>s.invoiced&&s.invoiceNum).map(s=>s.invoiceNum))];
+    const genBtn=!allInv?`<button class="month-gen-btn" onclick="event.stopPropagation();generateMonthInvoice('${ym}')">Generate</button>`:`<span style="font-size:10px;opacity:.7">Invoiced${invNums.length?' #'+invNums.join(', #'):''}</span>`;
+    const cards=group.map(s=>{
+      const cat=s.cat||'11';
+      const statusOpts=statusesForCat(cat).map(st=>`<option value="${st.ruleId}"${st.ruleId===s.statusRuleId?' selected':''}>${st.value}</option>`).join('');
+      const invChip=s.invoiced?`<span class="chip-invoiced">Invoiced #${s.invoiceNum||'?'}</span>`:'';
+      return`<div class="session-card" style="${s.invoiced?'opacity:0.7;':''}">
+        <div class="session-card-head">
+          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+            <span class="session-num">Session ${s._idx+1}</span>
+            <span class="${catChipClass(cat)}">${catLabel(cat)}</span>${invChip}
+          </div>
+          <button class="session-remove" onclick="removeSession(${s.id})">×</button>
+        </div>
+        <div class="sess-field"><label>Date</label><input type="date" value="${s.date}" onchange="updateSess(${s.id},'date',this.value)"></div>
+        <div class="sess-field"><label>Session Type</label><input type="text" value="${s.service||''}" oninput="updateSess(${s.id},'service',this.value)"></div>
+        <div class="sess-field"><label>Status</label><select onchange="onSessStatusChange(${s.id},this.value,'${cat}')">${statusOpts}</select></div>
+        <div class="sess-row2">
+          <div class="sess-field"><label>Rate ($/hr)</label><input type="number" value="${s.rate}" oninput="updateSess(${s.id},'rate',this.value)" step="5"></div>
+          <div class="sess-field"><label>Billed Hours</label><input type="number" value="${s.hrs}" oninput="updateSess(${s.id},'hrs',this.value)" step="0.5" min="0"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text-s);text-align:right;margin-top:2px">Amount: <strong style="color:${s.invoiced?'var(--text-s)':'var(--navy-mid)'}">$${((s.hrs||0)*(s.rate||0)).toFixed(2)}</strong></div>
+      </div>`;
+    }).join('<div style="height:1px;background:var(--cream-b);margin:0 12px"></div>');
+    return`<div class="month-group">
+      <div class="month-group-header ${headerClass}" onclick="toggleMonth('${ym}')" style="cursor:pointer;-webkit-tap-highlight-color:transparent">
+        <div style="flex:1;min-width:0">
+          <div class="month-group-title">${monthLabel}</div>
+          <div class="month-group-meta">${allInv?'Fully invoiced':uninv.length+' session'+(uninv.length!==1?'s':'')+' pending'} · $${(allInv?total:uninvTotal).toFixed(2)}</div>
+        </div>
+        <span style="font-size:18px;opacity:.8;margin-left:12px;flex-shrink:0">${isOpen?'▾':'›'}</span>
+      </div>
+      <div class="month-sessions-body${isOpen?'':' hidden'}" id="mg-${ym}">
+        ${!allInv?`<div style="padding:10px 18px 6px;border-bottom:1px solid var(--cream-b)"><button onclick="generateMonthInvoice('${ym}')" style="width:100%;padding:11px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer">Generate Invoice</button></div>`:''}
+        <div style="padding-bottom:8px">${cards}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleMonth(ym){if(expandedMonths.has(ym))expandedMonths.delete(ym);else expandedMonths.add(ym);renderSessions();}
+function removeSession(id){
+  appConfirm('Remove this session?','Remove','',function(ok){
+    if(!ok)return;
+    state.sessions=state.sessions.filter(s=>s.id!==id);
+    saveState();renderSessions();updateSummary();
+  });
+}
+function updateSess(id,field,val){
+  const s=state.sessions.find(s=>s.id===id);
+  if(s)s[field]=(field==='rate'||field==='hrs')?parseFloat(val)||0:val;
+  if(field==='date'){sortSessions();renderSessions();}
+  saveState();updateSummary();
+}
+function onSessStatusChange(id,ruleId,cat){
+  const s=state.sessions.find(s=>s.id===id);
+  if(!s)return;
+  s.statusRuleId=ruleId;s.hrs=getRuleHours(ruleId);
+  s.status=PAR_STATUSES.find(st=>st.ruleId===ruleId&&st.cat===cat)?.value||'';
+  saveState();renderSessions();updateSummary();
+}
+function clearDuplicates(){
+  const seen=new Set();const deduped=[];let removed=0;
+  state.sessions.forEach(s=>{
+    const key=`${s.date}|${s.service}`;
+    if(!seen.has(key)){seen.add(key);deduped.push(s);}
+    else removed++;
+  });
+  if(!removed){showToast('No duplicate sessions found.');return;}
+  appConfirm('Remove '+removed+' duplicate session'+(removed!==1?'s':'')+' (same date + description)?','Remove','',function(ok){
+    if(!ok)return;
+    state.sessions=deduped;
+    saveState();renderSessions();updateSummary();
+    showToast(removed+' removed ✓','success');
+  });
+}
+function clearSessions(){
+  appConfirm('Clear all sessions? This cannot be undone.','Clear','',function(ok){
+    if(!ok)return;
+    state.sessions=[];
+    expandedMonths.clear();
+    saveState();
+    renderSessions();
+    updateSummary();
+    showToast('Sessions cleared.');
+  });
+}
+
+// ── SUMMARY ───────────────────────────────────────────────
+function updateSummary(){
+  const s=state.sessions;
+  const total=s.reduce((a,x)=>a+(x.hrs||0)*(x.rate||0),0);
+  const hours=s.reduce((a,x)=>a+(x.hrs||0),0);
+  const period=calcPeriod(s);
+  document.getElementById('sum-sessions').textContent=s.length;
+  document.getElementById('sum-hours').textContent=hours.toFixed(1);
+  document.getElementById('sum-total').textContent='$'+total.toFixed(0);
+  document.getElementById('sum-period').textContent=period.label;
+}
+
+// ── BULK ADD ──────────────────────────────────────────────
+function openBulkAdd(){
+  const today=todayStr();
+  document.getElementById('bulk-start').value=today;
+  const end=new Date();end.setDate(end.getDate()+42);
+  document.getElementById('bulk-end').value=end.toISOString().split('T')[0];
+  document.getElementById('bulk-day').value='4';
+  document.getElementById('bulk-rate').value=state.settings.rate||40;
+  bulkMode='range';setBulkMode('range');
+  onBulkParCatChange();previewBulk();openModal('modal-bulk');
+}
+let bulkModeActive='range';
+function setBulkMode(mode){
+  bulkModeActive=mode;
+  const activeS='flex:1;padding:12px 8px;border:2px solid var(--navy);border-radius:10px;font-family:Inter,sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:var(--navy);color:#fff;transition:all .15s';
+  const inactS='flex:1;padding:12px 8px;border:2px solid var(--cream-b);border-radius:10px;font-family:Inter,sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:var(--text-s);transition:all .15s';
+  document.getElementById('bulk-mode-range').style.cssText=mode==='range'?activeS:inactS;
+  document.getElementById('bulk-mode-count').style.cssText=mode==='count'?activeS:inactS;
+  document.getElementById('bulk-range-fields').style.display=mode==='range'?'block':'none';
+  document.getElementById('bulk-count-fields').style.display=mode==='count'?'block':'none';
+  if(mode==='count'){
+    const cat=v('bulk-par-cat');
+    const needs11=cat==='11'||cat==='mcis';
+    if(needs11)document.getElementById('bulk-count').value=state.settings.parBase||6;
+  }
+  previewBulk();
+}
+function onBulkParCatChange(){
+  const cat=v('bulk-par-cat');
+  const needs11=cat==='11'||cat==='mcis';
+  document.getElementById('bulk-initials-wrap').style.display=needs11?'block':'none';
+  const def=state.rules.find(r=>r.cat===cat);
+  document.getElementById('bulk-hrs').value=def?def.hours:3;
+  if(bulkModeActive==='count'&&needs11)document.getElementById('bulk-count').value=state.settings.parBase||6;
+  if(bulkModeActive==='range'&&needs11)autoFillBulkEnd();
+  previewBulk();
+}
+function autoFillBulkEnd(){
+  const start=v('bulk-start');if(!start)return;
+  const base=state.settings.parBase||6;const freq=parseInt(v('bulk-freq'))||1;const day=parseInt(v('bulk-day'));
+  let d=new Date(start+'T12:00:00');while(d.getDay()!==day)d.setDate(d.getDate()+1);
+  d.setDate(d.getDate()+(base-1)*freq*7);
+  document.getElementById('bulk-end').value=d.toISOString().split('T')[0];
+}
+function onBulkStartChange(){
+  const cat=v('bulk-par-cat');const needs11=cat==='11'||cat==='mcis';
+  if(needs11&&bulkModeActive==='range')autoFillBulkEnd();
+  previewBulk();
+}
+function getBulkDates(){
+  const start=v('bulk-start');if(!start)return[];
+  const day=parseInt(v('bulk-day'));const freq=parseInt(v('bulk-freq'))||1;
+  const dates=[];let d=new Date(start+'T12:00:00');
+  while(d.getDay()!==day)d.setDate(d.getDate()+1);
+  if(bulkModeActive==='count'){
+    const count=parseInt(v('bulk-count'))||1;
+    for(let i=0;i<count;i++){dates.push(d.toISOString().split('T')[0]);d.setDate(d.getDate()+freq*7);}
+  } else {
+    const endStr=v('bulk-end');if(!endStr)return[];
+    const endD=new Date(endStr+'T12:00:00');
+    while(d<=endD){dates.push(d.toISOString().split('T')[0]);d.setDate(d.getDate()+freq*7);}
+  }
+  return dates;
+}
+function previewBulk(){
+  const dates=getBulkDates();const prev=document.getElementById('bulk-preview');
+  if(bulkModeActive==='count'){
+    const endLabel=document.getElementById('bulk-count-end-label');
+    if(dates.length)endLabel.textContent=`Last session: ${fmtDate(dates[dates.length-1])}`;else endLabel.textContent='';
+  }
+  if(!dates.length){prev.style.display='none';return;}
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  prev.style.display='block';
+  const shown=dates.slice(0,12);const rest=dates.length-12;
+  prev.innerHTML=`<strong style="color:var(--navy)">${dates.length} session${dates.length!==1?'s':''}</strong> will be added:<br><br>`+
+    shown.map((d,i)=>`<span style="display:inline-block;background:#fff;border:1px solid var(--cream-b);border-radius:5px;padding:2px 8px;margin:2px 3px 2px 0;font-size:11px"><strong style="color:var(--navy)">${i+1}</strong> &nbsp;${days[new Date(d+'T12:00:00').getDay()]} ${fmtDate(d)}</span>`).join('')+
+    (rest>0?`<br><span style="font-size:11px;color:var(--text-s)">+${rest} more</span>`:'');
+}
+function confirmBulkAdd(){
+  const dates=getBulkDates();if(!dates.length){showToast('No dates to add.','error');return;}
+  const cat=v('bulk-par-cat');const initials=v('bulk-initials').trim().toUpperCase();
+  const needs11=cat==='11'||cat==='mcis';
+  let baseDesc=cat==='group'?'PAR Group':cat==='meeting'?'PAR Team Meeting':cat==='mcis'?'1:1 MCIS Virtual':'1:1 Virtual Session';
+  const desc=needs11&&initials?`${baseDesc} (${initials})`:baseDesc;
+  const rate=parseFloat(v('bulk-rate'))||state.settings.rate||40;
+  const defRule=state.rules.find(r=>r.cat===cat);
+  const hrs=defRule?defRule.hours:parseFloat(v('bulk-hrs'))||1;
+  let added=0;
+  dates.forEach(date=>{
+    const statusDef=PAR_STATUSES.find(s=>s.cat===cat);
+    state.sessions.push({id:Date.now()+Math.random(),date,service:desc,cat,statusRuleId:statusDef?.ruleId||'',status:statusDef?.value||'Happened',rate,hrs,invoiced:false});
+    added++;
+  });
+  sortSessions();saveState();renderSessions();updateSummary();closeModal('modal-bulk');
+  showToast(`${added} session${added!==1?'s':''} added ✓`,'success');
+}
+
+// ── PREVIEW ───────────────────────────────────────────────
+function setPreviewMode(mode){
+  previewMode = mode;
+  const navy = getComputedStyle(document.documentElement).getPropertyValue('--p-dark').trim() || '#2D1B69';
+  const mBtn = document.getElementById('preview-mode-monthly');
+  const cBtn = document.getElementById('preview-mode-combined');
+  if(mBtn && cBtn){
+    if(mode==='monthly'){
+      mBtn.style.background='var(--p-dark,#2D1B69)';mBtn.style.color='#fff';mBtn.style.borderColor='var(--p-dark,#2D1B69)';
+      cBtn.style.background='#fff';cBtn.style.color='var(--text-s,#9B8BB0)';cBtn.style.borderColor='var(--cream-b,#E2D9F3)';
+    } else {
+      cBtn.style.background='var(--p-dark,#2D1B69)';cBtn.style.color='#fff';cBtn.style.borderColor='var(--p-dark,#2D1B69)';
+      mBtn.style.background='#fff';mBtn.style.color='var(--text-s,#9B8BB0)';mBtn.style.borderColor='var(--cream-b,#E2D9F3)';
+    }
+  }
+  // Show/hide month nav
+  const nav = document.getElementById('preview-nav');
+  if(nav) nav.style.display = (mode==='monthly' && previewMonths.length>1) ? 'flex' : 'none';
+  renderPreviewPage();
+}
+
+function openPreview(targetYM){
+  const uninv=state.sessions.filter(s=>!s.invoiced);
+  const groups={};
+  uninv.forEach(s=>{const ym=s.date?s.date.substring(0,7):'0000-00';if(!groups[ym])groups[ym]=[];groups[ym].push(s);});
+  const sortedYMs=Object.keys(groups).sort();
+  if(!sortedYMs.length){showToast('No uninvoiced sessions to preview.','error');return;}
+  const baseLog=state.invoiceLog;
+  let nextNum=baseLog.length?Math.max(...baseLog.map(i=>parseInt(i.num)||0))+1:parseInt(v('inv-num')||'1');
+  previewMonths=sortedYMs.map(ym=>({ym,sessions:groups[ym],invNum:String(nextNum++).padStart(3,'0')}));
+  if(targetYM){const idx=previewMonths.findIndex(p=>p.ym===targetYM);previewIndex=idx>=0?idx:0;}else previewIndex=0;
+  document.getElementById('preview-nav').style.display=previewMonths.length>1?'flex':'none';
+  renderPreviewPage();openModal('modal-preview');
+}
+function previewNav(dir){previewIndex=Math.max(0,Math.min(previewMonths.length-1,previewIndex+dir));renderPreviewPage();}
+function renderPreviewPage(){
+  const item=previewMonths[previewIndex];if(!item)return;
+  const[y,m]=item.ym.split('-');
+  const monthLabel=new Date(parseInt(y),parseInt(m)-1,1).toLocaleDateString('en-CA',{month:'long',year:'numeric'});
+  document.getElementById('preview-month-label').textContent=monthLabel;
+  document.getElementById('preview-month-counter').textContent=`${previewIndex+1} of ${previewMonths.length} month${previewMonths.length!==1?'s':''}`;
+  document.getElementById('inv-num').value=item.invNum;
+  buildGovPreview(item.sessions,item.invNum);
+}
+async function downloadCurrentPreview(){
+  const item=previewMonths[previewIndex];if(!item)return;
+  await generateInvoice(item.ym,item.invNum);
+  previewMonths.splice(previewIndex,1);
+  if(!previewMonths.length){closeModal('modal-preview');return;}
+  previewIndex=Math.min(previewIndex,previewMonths.length-1);
+  document.getElementById('preview-nav').style.display=previewMonths.length>1?'flex':'none';
+  renderPreviewPage();
+}
+function generateMonthInvoice(ym){openPreview(ym);}
+
+function buildGovPreview(sessions,invNum){
+  const p=state.settings;
+  const total=sessions.reduce((a,s)=>a+(s.hrs||0)*(s.rate||0),0);
+  const invDate=v('inv-date');
+  // Format date like original: 18-August-2026
+  const fmtDateLong=(str)=>{
+    if(!str)return'—';
+    const d=new Date(str+'T12:00:00');
+    return d.getDate()+'-'+d.toLocaleDateString('en-CA',{month:'long'})+'-'+d.getFullYear();
+  };
+  let dataRows=sessions.map((ss,i)=>`<tr style="${i%2===1?'background:#F5F5F5':''}">
+    <td class="gov-col-date">${fmtDate(ss.date)}</td>
+    <td class="gov-col-desc">${ss.service||'—'}${ss.status&&ss.status!=='Happened'?' - <em style="font-style:italic;opacity:.85">'+ss.status+'</em>':''}</td>
+    <td class="gov-col-hrs c">${ss.hrs||0}</td>
+    <td class="gov-col-rate r">$${parseFloat(ss.rate||0).toFixed(2)}</td>
+    <td class="gov-col-amt r">$${((ss.hrs||0)*(ss.rate||0)).toFixed(2)}</td>
+  </tr>`).join('');
+  for(let i=sessions.length;i<8;i++)dataRows+=`<tr style="${i%2===1?'background:#F5F5F5':''}"><td class="gov-col-date">&nbsp;</td><td class="gov-col-desc"></td><td class="gov-col-hrs"></td><td class="gov-col-rate"></td><td class="gov-col-amt"></td></tr>`;
+
+  document.getElementById('inv-preview-doc').innerHTML=`
+  <div class="inv-gov">
+
+    <!-- HEADER ROW -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+      <div>
+        <div style="font-size:8px;color:#333">Facilitator Name:</div>
+        <div style="font-size:11px;font-weight:700;color:#000;margin-bottom:6px">${p.name||'Your Name'}</div>
+        <div style="font-size:8px;color:#333">Contract #:</div>
+        <div style="font-size:11px;font-weight:700;color:#000;margin-bottom:6px">${p.contract||'—'}</div>
+        <div style="font-size:8px;color:#333">HST #:</div>
+        <div style="font-size:11px;font-weight:700;color:#000">${p.hst||'N/A'}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:28px;font-weight:900;color:#aaa;letter-spacing:.08em;line-height:1">INVOICE</div>
+        <div style="font-size:10px;font-weight:700;color:#000;margin-top:3px">INVOICE # &nbsp; ${invNum}</div>
+        <div style="font-size:9px;color:#444;margin-top:2px">Date: ${fmtDateLong(invDate)}</div>
+      </div>
+    </div>
+
+    <!-- FACILITATOR ADDRESS -->
+    <div style="font-size:8px;color:#444;margin-bottom:8px;border-bottom:1px solid #ddd;padding-bottom:6px;line-height:1.8">
+      <span>Facilitator street address: ${p.addr||''}</span><br>
+      <span>City, Province, Postal Code: ${p.city||''}</span><br>
+      <span>Phone: ${p.phone||''}</span><br>
+      <span>Email: ${p.email||''}</span>
+    </div>
+
+    <!-- TO / FOR -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:10px">
+      <div>
+        <div style="font-size:9px;font-weight:700;color:#000;margin-bottom:3px">TO:</div>
+        <div style="font-size:9px;color:#000;line-height:1.6">${p.payee||'Region of Durham'}</div>
+        <div style="font-size:9px;color:#000;line-height:1.6">${p.payeeAddr1||'605 Rossland Road East'}</div>
+        <div style="font-size:9px;color:#000;line-height:1.6">${(p.payeeAddr2||'Whitby, Ontario').split('  ')[0]}</div>
+        <div style="font-size:9px;color:#000;line-height:1.6">${(p.payeeAddr2||'').split('  ')[1]||''}</div>
+      </div>
+      <div>
+        <div style="font-size:9px;font-weight:700;color:#000;margin-bottom:3px">FOR:</div>
+        <div style="font-size:9px;color:#000;line-height:1.6">${p.for1||'Durham Region Family Services'}</div>
+        <div style="font-size:9px;color:#000;line-height:1.6">${p.for2||'PAR Group Facilitation'}</div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <table class="gov-tbl">
+      <thead>
+        <tr>
+          <th class="gov-col-date" colspan="2">DESCRIPTION</th>
+          <th class="gov-col-hrs">HOURS</th>
+          <th class="gov-col-rate">RATE</th>
+          <th class="gov-col-amt">AMOUNT</th>
+        </tr>
+        <tr class="sub-head">
+          <th class="gov-col-date" style="font-size:7px;white-space:nowrap">Date worked</th>
+          <th class="gov-col-desc" style="font-size:7px">Explanation of work</th>
+          <th class="gov-col-hrs" style="font-size:7px;white-space:nowrap">Hours worked</th>
+          <th class="gov-col-rate" style="font-size:7px;white-space:nowrap">Hourly rate</th>
+          <th class="gov-col-amt" style="font-size:7px;white-space:nowrap">Hrs × rate</th>
+        </tr>
+      </thead>
+      <tbody>${dataRows}</tbody>
+    </table>
+
+    <!-- TOTALS -->
+    <div style="display:flex;justify-content:flex-end;border:1px solid #000;border-top:none">
+      <div style="width:55%;border-left:1px solid #000">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:3px 8px;border-bottom:1px solid #ddd;font-size:9px"><span>SUBTOTAL</span><span style="background:#FFFF00;padding:1px 8px;font-weight:700;min-width:60px;text-align:right">$${total.toFixed(2)}</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:3px 8px;border-bottom:1px solid #ddd;font-size:9px"><span>HST (13%)</span><span style="background:#FFFF00;padding:1px 8px;font-weight:700;min-width:60px;text-align:right">N/A</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:3px 8px;font-size:9px;font-weight:700"><span>TOTAL</span><span style="background:#FFFF00;padding:1px 8px;font-weight:700;min-width:60px;text-align:right">$${total.toFixed(2)}</span></div>
+      </div>
+    </div>
+
+    <!-- SIGNATURE -->
+    <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:end">
+      <div>
+        ${p.signature?sigImgHtml():'<div style="font-family:\'Dancing Script\',cursive;font-size:18px;color:#000;line-height:1.1;margin-bottom:2px">'+(p.name||'Facilitator Name')+'</div>'}
+        <div style="border-top:1.5px solid #000;margin-bottom:2px"></div>
+        <div style="font-size:7px;color:#555">Facilitator Signature</div>
+      </div>
+      <div>
+        <div style="border-top:1.5px solid #000;margin-bottom:2px"></div>
+        <div style="font-size:7px;color:#555;margin-bottom:2px">Payment Authorization</div>
+        <div style="font-size:8px;color:#000">${p.supervisor||'Dawn Hopps, Supervisor'}</div>
+        <div style="font-size:8px;color:#000">${p.supTitle||'Partner Assault Response Program'}</div>
+      </div>
+    </div>
+
+  </div>`;
+}
+
+// ── GENERATE PDF ──────────────────────────────────────────
+async function generateInvoice(targetYM,invNum){
+  const sessions=state.sessions.filter(s=>!s.invoiced&&s.date&&s.date.startsWith(targetYM));
+  if(!sessions.length){showToast('No uninvoiced sessions.','error');return;}
+  invNum=invNum||v('inv-num')||'001';
+  const btn=document.getElementById('btn-generate');
+  btn.disabled=true;btn.textContent='Generating…';
+  try{
+    buildGovPreview(sessions,invNum);
+    const el=document.getElementById('inv-preview-doc');
+    if(!document.getElementById('modal-preview').classList.contains('open')){
+      el.style.cssText='position:fixed;left:-9999px;top:0;width:640px;background:#fff';
+      document.body.appendChild(el);
+    }
+    const canvas=await html2canvas(el,{scale:2.5,useCORS:true,backgroundColor:'#fff',logging:false});
+    const{jsPDF}=window.jspdf;
+    const doc=new jsPDF({unit:'pt',format:'letter',orientation:'portrait'});
+    const pW=doc.internal.pageSize.getWidth(),margin=36,imgW=pW-margin*2;
+    doc.addImage(canvas.toDataURL('image/png',1.0),'PNG',margin,margin,imgW,(canvas.height/canvas.width)*imgW);
+    const period=calcPeriod(sessions);
+    const total=sessions.reduce((a,s)=>a+(s.hrs||0)*(s.rate||0),0);
+    const hours=sessions.reduce((a,s)=>a+(s.hrs||0),0);
+    const payee=(state.settings.payee||'PAR').replace(/\s+/g,'-');
+    doc.save(`PAR-Invoice-${invNum}_${payee}_${period.label.replace(/[\s\/]/g,'-')}.pdf`);
+    const invoicedIds=new Set(sessions.map(s=>s.id));
+    state.sessions.forEach(s=>{if(invoicedIds.has(s.id)){s.invoiced=true;s.invoiceNum=invNum;}});
+    state.invoiceLog.unshift({num:invNum,period:period.label,dateGenerated:new Date().toLocaleDateString('en-CA'),sessions:sessions.length,hours:hours.toFixed(1),total:total.toFixed(2),timestamp:Date.now()});
+    saveState();renderInvoiceLog();renderReports();renderSessions();
+    showToast(`Invoice #${invNum} downloaded ✓`,'success',3000);
+    document.getElementById('inv-num').value=String(parseInt(invNum)+1).padStart(3,'0');
+  }catch(e){showToast('PDF failed — try again.','error');console.error(e);}
+  finally{btn.disabled=false;btn.textContent='⬇ Download PDF';}
+}
+
+// ── REPORTS ───────────────────────────────────────────────
+function renderReports(){
+  const log=state.invoiceLog;const now=new Date();
+  const thisM=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('rep-ytd').textContent='$'+log.reduce((a,i)=>a+parseFloat(i.total||0),0).toFixed(0);
+  document.getElementById('rep-count').textContent=log.length;
+  document.getElementById('rep-month').textContent='$'+log.filter(i=>i.dateGenerated&&i.dateGenerated.startsWith(thisM)).reduce((a,i)=>a+parseFloat(i.total||0),0).toFixed(0);
+  document.getElementById('rep-sessions').textContent=log.reduce((a,i)=>a+parseInt(i.sessions||0),0);
+}
+function renderInvoiceLog(){
+  const el=document.getElementById('invoice-log');
+  if(!state.invoiceLog.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text-s);font-size:13px;">No invoices yet.</div>';return;}
+  el.innerHTML=state.invoiceLog.map(inv=>`
+    <div class="log-row">
+      <div class="log-badge">#${inv.num}</div>
+      <div class="log-info">
+        <div class="log-period">${inv.period}</div>
+        <div class="log-meta">${inv.sessions} sessions · ${inv.hours}h · ${inv.dateGenerated}</div>
+      </div>
+      <div class="log-right"><div class="log-amt">$${parseFloat(inv.total||0).toFixed(2)}</div></div>
+    </div>`).join('');
+}
+
+// ── BILLING RULES ─────────────────────────────────────────
+function renderBillingRules(){
+  const sections=[{label:'PAR 1:1 Regular',cat:'11'},{label:'PAR 1:1 MCIS',cat:'mcis'},{label:'PAR Group',cat:'group'},{label:'PAR Team Meeting',cat:'meeting'}];
+  let html='<thead><tr><th>Scenario</th><th style="text-align:center;width:52px">Hrs</th><th style="width:36px"></th></tr></thead><tbody>';
+  sections.forEach(sec=>{
+    html+=`<tr><td colspan="3" class="rules-section-head">${sec.label}</td></tr>`;
+    state.rules.filter(r=>r.cat===sec.cat).forEach(r=>{
+      html+=`<tr>
+        <td onclick="openEditRule('${r.id}')" style="cursor:pointer;padding-right:4px">${r.label}</td>
+        <td onclick="openEditRule('${r.id}')" style="text-align:center;font-weight:700;color:var(--navy-mid);cursor:pointer;white-space:nowrap">${r.hours}h</td>
+        <td style="text-align:center;padding:2px">
+          <button onclick="deleteRule('${r.id}')" style="background:#FCE4D6;border:none;border-radius:5px;color:#C4544A;font-size:13px;width:26px;height:26px;cursor:pointer;font-weight:700;line-height:1;-webkit-appearance:none;touch-action:manipulation">×</button>
+        </td>
+      </tr>`;
+    });
+    html+=`<tr>
+      <td colspan="3" style="padding:6px 18px">
+        <button onclick="openAddRule('${sec.cat}')" style="width:100%;padding:8px;background:transparent;border:1.5px dashed var(--cream-b);border-radius:7px;color:var(--navy-mid);font-family:Inter,sans-serif;font-size:12px;font-weight:600;cursor:pointer;-webkit-appearance:none;touch-action:manipulation">＋ Add scenario</button>
+      </td>
+    </tr>`;
+  });
+  html+='</tbody>';
+  document.getElementById('billing-rules-table').innerHTML=html;
+}
+function openEditRule(id){
+  editingRuleId=id;const r=state.rules.find(r=>r.id===id);if(!r)return;
+  document.getElementById('edit-rule-name').value=r.label;
+  document.getElementById('edit-rule-hours').value=r.hours;
+  openModal('modal-edit-rule');
+}
+function saveRuleEdit(){
+  if(!editingRuleId)return;
+  const r=state.rules.find(r=>r.id===editingRuleId);
+  if(r){
+    r.label=v('edit-rule-name').trim()||r.label;
+    r.hours=parseFloat(v('edit-rule-hours'))||0;
+  }
+  saveState();renderBillingRules();closeModal('modal-edit-rule');showToast('Rule updated ✓','success');
+}
+
+let addRuleCat=null;
+// ── SETTINGS ─────────────────────────────────────────────
+function deleteRule(id){
+  const r=state.rules.find(r=>r.id===id);
+  if(!r)return;
+  appConfirm('Delete "'+r.label+'"?','Delete','',function(ok){
+    if(!ok)return;
+    state.rules=state.rules.filter(r=>r.id!==id);
+    saveState();renderBillingRules();
+    showToast('Scenario deleted.','');
+  });
+}
+function openAddRule(cat){
+  addRuleCat=cat;
+  const labels={11:'PAR 1:1 Regular',mcis:'PAR 1:1 MCIS',group:'PAR Group',meeting:'PAR Team Meeting'};
+  document.getElementById('add-rule-cat-label').textContent=labels[cat]||cat;
+  document.getElementById('new-rule-name').value='';
+  document.getElementById('new-rule-hours').value='1';
+  openModal('modal-add-rule');
+}
+function confirmAddRule(){
+  const name=v('new-rule-name').trim();
+  if(!name){showToast('Enter a scenario name.','error');return;}
+  const hours=parseFloat(v('new-rule-hours'))||0;
+  const id='r_custom_'+Date.now();
+  state.rules.push({id,cat:addRuleCat,label:name,hours});
+  saveState();renderBillingRules();closeModal('modal-add-rule');
+  showToast(name+' added ✓','success');
+}
+function applySettings(){
+  const s=state.settings;
+  ['name','addr','city','phone','email','contract','hst','payee','payee-addr1','payee-addr2','for1','for2','supervisor','sup-title'].forEach(k=>{
+    const el=document.getElementById('s-'+k);if(el)el.value=s[k.replace('-','')]||s[k]||'';
+  });
+  document.getElementById('s-rate').value=s.rate||40;
+  if(typeof renderSigPreview==='function')renderSigPreview();
+  document.getElementById('s-par-base').value=s.parBase||6;
+  document.getElementById('s-hst').value=s.hst||'N/A';
+}
+function saveSettings(){
+  const s=state.settings;
+  s.name=v('s-name');s.addr=v('s-addr');s.city=v('s-city');s.phone=v('s-phone');s.email=v('s-email');
+  s.rate=parseFloat(v('s-rate'))||40;
+  s.contract=v('s-contract');s.hst=v('s-hst')||'N/A';
+  s.payee=v('s-payee');s.payeeAddr1=v('s-payee-addr1');s.payeeAddr2=v('s-payee-addr2');
+  s.for1=v('s-for1');s.for2=v('s-for2');
+  s.supervisor=v('s-supervisor');s.supTitle=v('s-sup-title');
+  s.parBase=parseInt(v('s-par-base'))||6;
+  updateTopbarSub();saveState();
+}
+function updateTopbarSub(){
+  const sub=document.getElementById('topbar-sub');
+  sub.textContent=state.settings.name?state.settings.name+(state.settings.contract?' · Contract #'+state.settings.contract:''):'Set up your profile in Settings';
+}
+function autoInvoiceNum(){
+  const last=state.invoiceLog.length?Math.max(...state.invoiceLog.map(i=>parseInt(i.num)||0)):0;
+  document.getElementById('inv-num').value=String(last+1).padStart(3,'0');
+}
+function clearInvoiceLog(){
+  appConfirm('Clear invoice log? PDFs already downloaded are not affected.','Clear','',function(ok){
+    if(!ok)return;
+    state.invoiceLog=[];
+    state.sessions.forEach(s=>{s.invoiced=false;delete s.invoiceNum;});
+    saveState();renderInvoiceLog();renderReports();renderSessions();showToast('Invoice log cleared.');
+  });
+}
+function clearAll(){
+  appConfirm('Clear everything? This cannot be undone.','Clear All','',function(ok){
+    if(!ok)return;
+    localStorage.removeItem('par_invoice_tool_v1');
+    location.reload();
+  });
+}
+
+// ── CUSTOM CONFIRM ───────────────────────────────────────
+let confirmCallback = null;
+function appConfirm(msg, okLabel, okClass, cb){
+  document.getElementById('confirm-msg').textContent = msg;
+  const btn = document.getElementById('confirm-ok-btn');
+  btn.textContent = okLabel || 'Confirm';
+  btn.className = 'confirm-ok' + (okClass ? ' ' + okClass : '');
+  confirmCallback = cb;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+function confirmResolve(ok){
+  document.getElementById('confirm-overlay').classList.remove('open');
+  if(confirmCallback) confirmCallback(ok);
+  confirmCallback = null;
+}
+
+// ── PERSIST ───────────────────────────────────────────────
+function saveState(){localStorage.setItem('par_invoice_tool_v1',JSON.stringify(state));}
+function loadState(){
+  const raw=localStorage.getItem('par_invoice_tool_v1');
+  if(!raw)return;
+  try{const d=JSON.parse(raw);state={...state,...d};}catch(e){}
+}
+
+// ── Signature ─────────────────────────────────────────────
+function sigTrim(cv){
+  const ctx=cv.getContext('2d'),w=cv.width,h=cv.height,d=ctx.getImageData(0,0,w,h).data;
+  let x0=w,y0=h,x1=-1,y1=-1;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){if(d[(y*w+x)*4+3]>10){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}}
+  if(x1<0)return null;
+  const pad=6;x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(w-1,x1+pad);y1=Math.min(h-1,y1+pad);
+  const out=document.createElement('canvas');out.width=x1-x0+1;out.height=y1-y0+1;
+  out.getContext('2d').drawImage(cv,x0,y0,out.width,out.height,0,0,out.width,out.height);
+  return out.toDataURL('image/png');
+}
+function renderSigPreview(){
+  const box=document.getElementById('sig-preview');if(!box)return;
+  const s=state.settings.signature;
+  box.innerHTML=s?'<img src="'+s+'" style="max-height:70px;max-width:100%">':'No signature saved yet';
+  document.getElementById('sig-remove-btn').style.display=s?'flex':'none';
+}
+function sigImgHtml(){
+  const s=state.settings.signature;
+  return s?'<img src="'+s+'" style="height:34px;max-width:100%;display:block;margin:0 auto 2px">':'';
+}
+function initSignature(){
+  const cv=document.getElementById('sig-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');let drawing=false,last=null;
+  function pos(e){const r=cv.getBoundingClientRect();return {x:(e.clientX-r.left)*cv.width/r.width,y:(e.clientY-r.top)*cv.height/r.height};}
+  function style(){ctx.lineWidth=5;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#111';}
+  cv.addEventListener('pointerdown',function(e){e.preventDefault();drawing=true;last=pos(e);style();ctx.beginPath();ctx.arc(last.x,last.y,2.5,0,6.283);ctx.fillStyle='#111';ctx.fill();try{cv.setPointerCapture(e.pointerId);}catch(x){}});
+  cv.addEventListener('pointermove',function(e){if(!drawing)return;e.preventDefault();const p=pos(e);style();ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();last=p;});
+  ['pointerup','pointercancel','pointerleave'].forEach(function(ev){cv.addEventListener(ev,function(){drawing=false;});});
+  document.getElementById('sig-draw-btn').addEventListener('click',function(){ctx.clearRect(0,0,cv.width,cv.height);openModal('modal-signature');});
+  document.getElementById('sig-clear-btn').addEventListener('click',function(){ctx.clearRect(0,0,cv.width,cv.height);});
+  document.getElementById('sig-save-btn').addEventListener('click',function(){
+    const url=sigTrim(cv);
+    if(!url){showToast('Draw your signature first.','error');return;}
+    state.settings.signature=url;saveState();renderSigPreview();closeModal('modal-signature');showToast('Signature saved ✓','success');
+  });
+  document.getElementById('sig-upload-btn').addEventListener('click',function(){document.getElementById('sig-file').click();});
+  document.getElementById('sig-file').addEventListener('change',function(e){
+    const f=e.target.files&&e.target.files[0];if(!f)return;
+    const rd=new FileReader();
+    rd.onload=function(){
+      const img=new Image();
+      img.onload=function(){
+        const sc=Math.min(1,700/img.width,240/img.height);
+        const c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*sc));c.height=Math.max(1,Math.round(img.height*sc));
+        const x=c.getContext('2d');x.drawImage(img,0,0,c.width,c.height);
+        const id=x.getImageData(0,0,c.width,c.height),d=id.data;
+        for(let i=0;i<d.length;i+=4){const lum=(d[i]+d[i+1]+d[i+2])/3;if(lum>225){d[i+3]=0;}else if(lum>170){d[i+3]=Math.round(d[i+3]*(225-lum)/55);}}
+        x.putImageData(id,0,0);
+        const url=sigTrim(c);
+        if(!url){showToast('No ink found in that image.','error');return;}
+        state.settings.signature=url;saveState();renderSigPreview();showToast('Signature saved ✓','success');
+      };
+      img.src=rd.result;
+    };
+    rd.readAsDataURL(f);e.target.value='';
+  });
+  document.getElementById('sig-remove-btn').addEventListener('click',function(){
+    appConfirm('Remove your saved signature?','Remove','btn-danger-ghost',function(){delete state.settings.signature;saveState();renderSigPreview();showToast('Signature removed.');});
+  });
+  renderSigPreview();
+}
+
+initSignature();
+</script>
+</body>
+</html>
