@@ -86,7 +86,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
 .month-sessions-body.hidden{display:none}
 
 /* BUTTONS */
-.btn{display:flex;align-items:center;justify-content:center;gap:7px;padding:13px;border-radius:10px;border:none;font-family:'Inter',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .15s;width:100%}
+.btn{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;justify-content:center;gap:7px;padding:13px;border-radius:10px;border:none;font-family:'Inter',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .15s;width:100%}
 .btn:active{transform:scale(.98)}
 .btn-primary{background:var(--navy);color:#fff}.btn-primary:active{background:var(--navy-mid)}
 .btn-secondary{background:var(--navy-soft);color:var(--navy-mid)}
@@ -116,7 +116,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(26,58,92,.55);z-index:100;display:none;align-items:flex-end;backdrop-filter:blur(4px)}
 .modal-overlay.open{display:flex}
-.modal-sheet{background:#fff;border-radius:18px 18px 0 0;padding:0 0 calc(var(--safe-bot)+20px);width:100%;max-height:92dvh;overflow-y:auto;animation:slideUp .25s ease}
+.modal-sheet{background:#fff;border-radius:18px 18px 0 0;padding:0 0 calc(var(--safe-bot) + 24px);width:100%;max-height:92dvh;overflow-y:auto;animation:slideUp .25s ease}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .modal-handle{width:36px;height:4px;background:var(--cream-b);border-radius:2px;margin:10px auto 0}
 .modal-head{padding:14px 18px 0;display:flex;align-items:center;justify-content:space-between}
@@ -166,7 +166,7 @@ table.gov-tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9
 .gov-auth-block .auth-line{font-size:8px;color:#000}
 
 /* TOAST */
-#toast{position:fixed;bottom:calc(var(--safe-bot)+80px);left:50%;transform:translateX(-50%) translateY(8px);background:var(--navy);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:all .25s;white-space:nowrap;pointer-events:none}
+#toast{position:fixed;bottom:calc(var(--safe-bot) + 110px);left:50%;transform:translateX(-50%) translateY(8px);background:var(--navy);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:all .25s;white-space:nowrap;pointer-events:none}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.success{background:#2E7D62}#toast.error{background:#A83D35}
@@ -222,7 +222,7 @@ table.gov-tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9
           <button id="btn-clear-sess" style="flex:1;padding:13px;background:#fff;color:#C4544A;border:1.5px solid #F4C9C7;border-radius:10px;font-family:Inter,sans-serif;font-size:14px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none;touch-action:manipulation">Clear Sessions</button>
         </div>
       </div>
-      <div style="display:flex;gap:10px;padding:14px 18px calc(var(--safe-bot)+16px)">
+      <div style="display:flex;gap:10px;padding:14px 18px calc(var(--safe-bot) + 24px)">
         <button class="btn btn-ghost" onclick="openPreview()" style="flex:1">Preview</button>
         <button class="btn btn-primary" id="btn-generate" onclick="openPreview()" style="flex:2">⬇ Download PDF</button>
       </div>
@@ -250,7 +250,7 @@ table.gov-tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9
           </div>
         </div>
       </div>
-      <button class="btn btn-ghost" onclick="openPreview()" style="margin:0 14px 8px">👁 Preview Invoice</button>
+      <button class="btn btn-ghost" onclick="openPreview()" style="margin:0 14px 8px">🔍 Preview Invoice</button>
     </div>
 
     <!-- REPORTS -->
@@ -910,7 +910,7 @@ function openPreview(targetYM){
   const groups={};
   uninv.forEach(s=>{const ym=s.date?s.date.substring(0,7):'0000-00';if(!groups[ym])groups[ym]=[];groups[ym].push(s);});
   const sortedYMs=Object.keys(groups).sort();
-  if(!sortedYMs.length){showToast('No uninvoiced sessions to preview.','error');return;}
+  if(!sortedYMs.length){showToast('Nothing to preview. Every session is already invoiced.','error',3500);return;}
   const baseLog=state.invoiceLog;
   let nextNum=baseLog.length?Math.max(...baseLog.map(i=>parseInt(i.num)||0))+1:parseInt(v('inv-num')||'1');
   previewMonths=sortedYMs.map(ym=>({ym,sessions:groups[ym],invNum:String(nextNum++).padStart(3,'0')}));
@@ -1058,16 +1058,10 @@ async function generateInvoice(targetYM,invNum){
   btn.disabled=true;btn.textContent='Generating…';
   try{
     buildGovPreview(sessions,invNum);
-    const el=document.getElementById('inv-preview-doc');
-    if(!document.getElementById('modal-preview').classList.contains('open')){
-      el.style.cssText='position:fixed;left:-9999px;top:0;width:640px;background:#fff';
-      document.body.appendChild(el);
-    }
-    const canvas=await html2canvas(el,{scale:2.5,useCORS:true,backgroundColor:'#fff',logging:false});
+    const canvas=await captureInvoiceCanvas(640);
     const{jsPDF}=window.jspdf;
     const doc=new jsPDF({unit:'pt',format:'letter',orientation:'portrait'});
-    const pW=doc.internal.pageSize.getWidth(),margin=36,imgW=pW-margin*2;
-    doc.addImage(canvas.toDataURL('image/png',1.0),'PNG',margin,margin,imgW,(canvas.height/canvas.width)*imgW);
+    addCanvasToPdf(doc,canvas);
     const period=calcPeriod(sessions);
     const total=sessions.reduce((a,s)=>a+(s.hrs||0)*(s.rate||0),0);
     const hours=sessions.reduce((a,s)=>a+(s.hrs||0),0);
@@ -1308,6 +1302,26 @@ function initSignature(){
 }
 
 initSignature();
+
+// ── PDF capture (renders an offscreen clone so modals/scroll never clip it) ──
+async function captureInvoiceCanvas(width){
+  const src=document.getElementById('inv-preview-doc');
+  const wrap=document.createElement('div');
+  wrap.style.cssText='position:fixed;left:-10000px;top:0;width:'+width+'px;background:#fff;pointer-events:none';
+  const clone=src.cloneNode(true);clone.removeAttribute('id');clone.style.cssText='width:'+width+'px;max-width:none;margin:0;background:#fff';
+  wrap.appendChild(clone);document.body.appendChild(wrap);
+  try{
+    if(document.fonts&&document.fonts.ready){try{await document.fonts.ready;}catch(e){}}
+    return await html2canvas(clone,{scale:2.5,useCORS:true,backgroundColor:'#fff',logging:false,width:width,windowWidth:width,scrollX:0,scrollY:0});
+  }finally{wrap.remove();}
+}
+function addCanvasToPdf(doc,canvas){
+  const pW=doc.internal.pageSize.getWidth(),pH=doc.internal.pageSize.getHeight(),margin=36;
+  let w=pW-margin*2,h=(canvas.height/canvas.width)*w;
+  const maxH=pH-margin*2;
+  if(h>maxH){w=w*(maxH/h);h=maxH;}
+  doc.addImage(canvas.toDataURL('image/png',1.0),'PNG',(pW-w)/2,margin,w,h);
+}
 </script>
 </body>
 </html>
