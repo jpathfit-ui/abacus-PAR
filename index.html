@@ -179,14 +179,20 @@ table.gov-tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9
 .confirm-ok{background:var(--danger);color:#fff}
 .confirm-ok.safe{background:var(--navy);color:#fff}
 .confirm-cancel{background:var(--navy-soft);color:var(--navy-mid)}
-#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:linear-gradient(145deg,#08241A,#1F7048);transition:opacity .45s ease;text-align:center;padding:24px}
+#splash{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#08241A,#1F7048);transition:opacity .6s ease}
 #splash.hide{opacity:0;pointer-events:none}
-#splash img{width:104px;height:104px;border-radius:24px;box-shadow:0 14px 34px rgba(0,0,0,.35)}
-#splash .sp-t{font-family:'Inter',sans-serif;font-weight:800;font-size:26px;letter-spacing:-.01em;line-height:1.2;background:linear-gradient(180deg,#FFF3C0,#F7CF5A 45%,#C48A12);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 8px rgba(0,0,0,.35))}
+#splash svg{width:230px;height:230px;filter:drop-shadow(0 10px 22px rgba(0,0,0,.35))}
+#splash .sp-b{animation:spSlide .5s cubic-bezier(.45,.05,.25,1) forwards}
+@keyframes spSlide{to{transform:translateX(16px)}}
 </style>
 </head>
 <body>
-<div id="splash"><img src="icon.png" alt="" onerror="this.style.display='none'"><div class="sp-t">Abacus: Invoice Generator</div></div>
+<div id="splash"><svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="spr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D8FBE4"/><stop offset="1" stop-color="#6FDB98"/></linearGradient><linearGradient id="spg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF3C0"/><stop offset=".5" stop-color="#F7CF5A"/><stop offset="1" stop-color="#C48A12"/></linearGradient></defs>
+<rect x="13" y="15" width="74" height="70" rx="11" fill="none" stroke="url(#spr)" stroke-width="5"/>
+<g stroke="url(#spr)" stroke-width="3.5" stroke-linecap="round"><path d="M18 33H82M18 50H82M18 67H82"/></g>
+<g fill="url(#spg)"><circle cx="28" cy="33" r="7.5"/><circle cx="43" cy="33" r="7.5"/><circle class="sp-b" style="animation-delay:.25s;animation-play-state:running" cx="58" cy="33" r="7.5"/>
+<circle cx="28" cy="50" r="7.5"/><circle cx="43" cy="50" r="7.5"/><circle class="sp-b" style="animation-delay:.7s" cx="58" cy="50" r="7.5"/>
+<circle cx="28" cy="67" r="7.5"/><circle cx="43" cy="67" r="7.5"/><circle class="sp-b" style="animation-delay:1.15s" cx="58" cy="67" r="7.5"/></g></svg></div>
 
 <div id="app">
   <div class="topbar">
@@ -1329,11 +1335,11 @@ function addCanvasToPdf(doc,canvas){
   doc.addImage(canvas.toDataURL('image/png',1.0),'PNG',(pW-w)/2,margin,w,h);
 }
 
-// ── Launch splash ──
+// ── Launch animation ──
 (function(){
   var sp=document.getElementById('splash');if(!sp)return;
-  function hide(){sp.classList.add('hide');setTimeout(function(){if(sp.parentNode)sp.parentNode.removeChild(sp);},500);}
-  sp.addEventListener('click',hide);setTimeout(hide,1500);
+  function hide(){sp.classList.add('hide');setTimeout(function(){if(sp.parentNode)sp.parentNode.removeChild(sp);},700);}
+  sp.addEventListener('click',hide);setTimeout(hide,2250);
 })();
 </script>
 </body>
