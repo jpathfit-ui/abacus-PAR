@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Abacus (PAR)">
 <meta name="theme-color" content="#1A3A5C">
-<title>Abacus (PAR)</title>
+<title>Abacus: Invoice Generator</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="icon.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -29,7 +29,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
 .topbar{background:var(--navy);padding-top:var(--safe-top);flex-shrink:0;z-index:10}
 .topbar-inner{padding:14px 24px 14px}
 .topbar-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.topbar-title{font-family:'Inter',sans-serif;font-size:18px;color:#fff;font-weight:700;letter-spacing:-.01em}
+.topbar-title{font-family:'Inter',sans-serif;font-size:16px;color:#fff;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .topbar-sub{font-size:11px;color:var(--navy-muted);margin-top:2px;font-weight:500}
 
 /* TABS */
@@ -179,15 +179,21 @@ table.gov-tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9
 .confirm-ok{background:var(--danger);color:#fff}
 .confirm-ok.safe{background:var(--navy);color:#fff}
 .confirm-cancel{background:var(--navy-soft);color:var(--navy-mid)}
+#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:linear-gradient(145deg,#08241A,#1F7048);transition:opacity .45s ease;text-align:center;padding:24px}
+#splash.hide{opacity:0;pointer-events:none}
+#splash img{width:104px;height:104px;border-radius:24px;box-shadow:0 14px 34px rgba(0,0,0,.35)}
+#splash .sp-t{font-family:'Inter',sans-serif;font-weight:800;font-size:26px;letter-spacing:-.01em;line-height:1.2;background:linear-gradient(180deg,#FFF3C0,#F7CF5A 45%,#C48A12);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 8px rgba(0,0,0,.35))}
 </style>
 </head>
 <body>
+<div id="splash"><img src="icon.png" alt="" onerror="this.style.display='none'"><div class="sp-t">Abacus: Invoice Generator</div></div>
+
 <div id="app">
   <div class="topbar">
     <div class="topbar-inner">
       <div class="topbar-row">
         <div>
-          <div class="topbar-title">Abacus (PAR)</div>
+          <div class="topbar-title">Abacus: Invoice Generator</div>
           <div class="topbar-sub" id="topbar-sub">Set up your profile in Settings</div>
         </div>
       </div>
@@ -1322,6 +1328,13 @@ function addCanvasToPdf(doc,canvas){
   if(h>maxH){w=w*(maxH/h);h=maxH;}
   doc.addImage(canvas.toDataURL('image/png',1.0),'PNG',(pW-w)/2,margin,w,h);
 }
+
+// ── Launch splash ──
+(function(){
+  var sp=document.getElementById('splash');if(!sp)return;
+  function hide(){sp.classList.add('hide');setTimeout(function(){if(sp.parentNode)sp.parentNode.removeChild(sp);},500);}
+  sp.addEventListener('click',hide);setTimeout(hide,1500);
+})();
 </script>
 </body>
 </html>
