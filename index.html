@@ -184,6 +184,7 @@ table.gov-tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9
 #splash svg{width:98px;height:98px;filter:drop-shadow(0 8px 16px rgba(0,0,0,.28))}
 #splash .sp-b{animation:spSlide .5s cubic-bezier(.45,.05,.25,1) forwards}
 @keyframes spSlide{to{transform:translateX(22px)}}
+.topbar-title{display:flex;align-items:center;gap:8px;font-size:15px}.topbar-title .tb-ic{width:24px;height:24px;border-radius:6px;flex-shrink:0}.topbar-title span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -194,7 +195,7 @@ table.gov-tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9
     <div class="topbar-inner">
       <div class="topbar-row">
         <div>
-          <div class="topbar-title">Abacus: Invoice Generator</div>
+          <div class="topbar-title"><img src="icon.png" alt="" class="tb-ic" onerror="this.style.display='none'"><span>Abacus: Invoice Generator</span></div>
           <div class="topbar-sub" id="topbar-sub">Set up your profile in Settings</div>
         </div>
       </div>
