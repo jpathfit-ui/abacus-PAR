@@ -295,7 +295,7 @@ table.gov-tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9
       <div class="card">
         <div class="card-head">Contract Details</div>
         <div class="card-body">
-          <div class="field"><label>Contract #</label><input type="text" id="s-contract" placeholder="0000000000" oninput="saveSettings()"></div>
+          <div class="field"><label>Contract # (invoice numbering restarts at 001 for each new contract)</label><input type="text" id="s-contract" placeholder="0000000000" oninput="saveSettings()"></div>
           <div class="field"><label>HST #</label><input type="text" id="s-hst" value="N/A" oninput="saveSettings()"></div>
         </div>
       </div>
@@ -913,6 +913,12 @@ function setPreviewMode(mode){
   renderPreviewPage();
 }
 
+// Invoice numbers restart at 1 for each contract (each contract = one year)
+function nextInvoiceNumber(){
+  const c=(state.settings.contract||'').trim();
+  const nums=state.invoiceLog.filter(i=>(i.contract||'')===c).map(i=>parseInt(i.num)||0);
+  return nums.length?Math.max(...nums)+1:1;
+}
 function openPreview(targetYM){
   const uninv=state.sessions.filter(s=>!s.invoiced);
   const groups={};
@@ -920,7 +926,7 @@ function openPreview(targetYM){
   const sortedYMs=Object.keys(groups).sort();
   if(!sortedYMs.length){showToast('Nothing to preview. Every session is already invoiced.','error',3500);return;}
   const baseLog=state.invoiceLog;
-  let nextNum=baseLog.length?Math.max(...baseLog.map(i=>parseInt(i.num)||0))+1:parseInt(v('inv-num')||'1');
+  let nextNum=nextInvoiceNumber();
   previewMonths=sortedYMs.map(ym=>({ym,sessions:groups[ym],invNum:String(nextNum++).padStart(3,'0')}));
   if(targetYM){const idx=previewMonths.findIndex(p=>p.ym===targetYM);previewIndex=idx>=0?idx:0;}else previewIndex=0;
   document.getElementById('preview-nav').style.display=previewMonths.length>1?'flex':'none';
@@ -1102,10 +1108,10 @@ async function generateInvoice(targetYM,invNum){
     doc.save(`PAR-Invoice-${invNum}_${payee}_${period.label.replace(/[\s\/]/g,'-')}.pdf`);
     const invoicedIds=new Set(sessions.map(s=>s.id));
     state.sessions.forEach(s=>{if(invoicedIds.has(s.id)){s.invoiced=true;s.invoiceNum=invNum;}});
-    state.invoiceLog.unshift({num:invNum,period:period.label,dateGenerated:new Date().toLocaleDateString('en-CA'),sessions:sessions.length,hours:hours.toFixed(1),total:total.toFixed(2),timestamp:Date.now()});
+    state.invoiceLog.unshift({num:invNum,contract:(state.settings.contract||'').trim(),period:period.label,dateGenerated:new Date().toLocaleDateString('en-CA'),sessions:sessions.length,hours:hours.toFixed(1),total:total.toFixed(2),timestamp:Date.now()});
     saveState();renderInvoiceLog();renderReports();renderSessions();
     showToast(`Invoice #${invNum} downloaded ✓`,'success',3000);
-    document.getElementById('inv-num').value=String(parseInt(invNum)+1).padStart(3,'0');
+    document.getElementById('inv-num').value=String(nextInvoiceNumber()).padStart(3,'0');
   }catch(e){showToast('PDF failed — try again.','error');console.error(e);}
   finally{btn.disabled=false;btn.textContent='⬇ Download PDF';}
 }
@@ -1216,7 +1222,7 @@ function saveSettings(){
   const s=state.settings;
   s.name=v('s-name');s.addr=v('s-addr');s.city=v('s-city');s.phone=v('s-phone');s.email=v('s-email');
   s.rate=parseFloat(v('s-rate'))||40;
-  s.contract=v('s-contract');s.hst=v('s-hst')||'N/A';
+  s.contract=v('s-contract');setTimeout(function(){try{autoInvoiceNum();}catch(e){}},0);s.hst=v('s-hst')||'N/A';
   s.payee=v('s-payee');s.payeeAddr1=v('s-payee-addr1');s.payeeAddr2=v('s-payee-addr2');
   s.for1=v('s-for1');s.for2=v('s-for2');
   s.supervisor=v('s-supervisor');s.supTitle=v('s-sup-title');
@@ -1228,8 +1234,7 @@ function updateTopbarSub(){
   sub.textContent=state.settings.name?state.settings.name+(state.settings.contract?' · Contract #'+state.settings.contract:''):'Set up your profile in Settings';
 }
 function autoInvoiceNum(){
-  const last=state.invoiceLog.length?Math.max(...state.invoiceLog.map(i=>parseInt(i.num)||0)):0;
-  document.getElementById('inv-num').value=String(last+1).padStart(3,'0');
+  document.getElementById('inv-num').value=String(nextInvoiceNumber()).padStart(3,'0');
 }
 function clearInvoiceLog(){
   appConfirm('Clear invoice log? PDFs already downloaded are not affected.','Clear','',function(ok){
